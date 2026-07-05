@@ -4,8 +4,9 @@ import gc
 import os
 import sys
 from pathlib import Path
+from folium.plugins import MarkerCluster
+import folium
 
-# เพิ่มโฟลเดอร์ scripts เข้า sys.path เพื่อให้หาโมดูล utils เจอ
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from utils import load_config, get_logger
 
@@ -19,14 +20,14 @@ bkk_bbox = config.get("bkk_bbox", [100.30, 13.45, 100.95, 13.95])
 target_competitors = config.get("target_competitors", ['restaurant', 'cafe', 'fast_food', 'bar'])
 
 def main():
-    logger.info("🚀 เริ่มต้นเชื่อมต่อไฟล์ดิบ OSM และจำกัดขอบเขตกรุงเทพฯ...")
+    logger.info("เริ่มต้นเชื่อมต่อไฟล์ดิบ OSM และจำกัดขอบเขตกรุงเทพฯ...")
     if not os.path.exists(osm_filepath):
         logger.error(f"ไม่พบไฟล์ OSM ที่ {osm_filepath}")
         return
 
     osm = OSM(osm_filepath, bounding_box=bkk_bbox)
 
-    logger.info(f"🏗️ กำลังสกัดข้อมูลดิบกลุ่มคู่แข่ง (ประเภท: {target_competitors})...")
+    logger.info(f"กำลังสกัดข้อมูลดิบกลุ่มคู่แข่ง (ประเภท: {target_competitors})...")
     pois_gdf = osm.get_pois(custom_filter={"amenity": target_competitors})
 
     if pois_gdf is None or len(pois_gdf) == 0:
@@ -46,9 +47,8 @@ def main():
     os.makedirs(str(BASE_DIR / "data" / "interim"), exist_ok=True)
     output_competitor_file = str(BASE_DIR / "data" / "interim" / "bangkok_competitors.json")
     df_pois_flat.to_json(output_competitor_file, orient='records', force_ascii=False, indent=4)
-    logger.info(f"💾 บันทึกสกัดไฟล์ระดับดิบเข้าคลัง interim สำเร็จ: {output_competitor_file}")
+    logger.info(f"บันทึกสกัดไฟล์ระดับดิบเข้าคลัง interim สำเร็จ: {output_competitor_file}")
     
-    # เคลียร์แรม
     del pois_gdf
     del df_pois_flat
     gc.collect()

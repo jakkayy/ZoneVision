@@ -5,7 +5,6 @@ import os
 import sys
 from pathlib import Path
 
-# เพิ่มโฟลเดอร์ scripts เข้า sys.path เพื่อให้หาโมดูล utils เจอ
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from utils import load_config, get_logger
 
@@ -19,14 +18,14 @@ bkk_bbox = config.get("bkk_bbox", [100.30, 13.45, 100.95, 13.95])
 target_pois = config.get("target_pois", ["apartments", "residential", "office", "commercial", "retail"])
 
 def main():
-    logger.info("🚀 เริ่มต้นเชื่อมต่อไฟล์ดิบ OSM และจำกัดขอบเขตกรุงเทพฯ...")
+    logger.info("เริ่มต้นเชื่อมต่อไฟล์ดิบ OSM และจำกัดขอบเขตกรุงเทพฯ...")
     if not os.path.exists(osm_filepath):
         logger.error(f"ไม่พบไฟล์ OSM ที่ {osm_filepath}")
         return
 
     osm = OSM(osm_filepath, bounding_box=bkk_bbox)
 
-    logger.info(f"🏗️ กำลังสกัดข้อมูลตึกดิบกลุ่มจุดสนใจ (ประเภท: {target_pois})...")
+    logger.info(f"กำลังสกัดข้อมูลตึกดิบกลุ่มจุดสนใจ (ประเภท: {target_pois})...")
     buildings_gdf = osm.get_buildings()
 
     if buildings_gdf is None or len(buildings_gdf) == 0:
@@ -46,9 +45,8 @@ def main():
     os.makedirs(str(BASE_DIR / "data" / "interim"), exist_ok=True)
     output_file = str(BASE_DIR / "data" / "interim" / "bangkok_pois.json")
     df_flat.to_json(output_file, orient='records', force_ascii=False, indent=4)
-    logger.info(f"💾 บันทึกสกัดไฟล์ระดับดิบเข้าคลัง interim สำเร็จ: {output_file}")
+    logger.info(f"บันทึกสกัดไฟล์ระดับดิบเข้าคลัง interim สำเร็จ: {output_file}")
 
-    # เคลียร์แรม
     del buildings_gdf
     del df_flat
     gc.collect()
