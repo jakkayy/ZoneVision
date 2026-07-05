@@ -124,7 +124,11 @@ def evaluate_site(lat, lng, biz_type, max_radius_km=1.0):
     opportunity_ratio = weighted_demand / (weighted_supply + 1.0)
     # ปรับจูน Divisor เป็น 3.5 เพื่อเกลี่ยคะแนนให้สอดคล้องกับพฤติกรรมความหนาแน่นเมือง
     raw_score = 100.0 * (1.0 - np.exp(-opportunity_ratio / 3.5))
-    score = round(raw_score, 1)
+    
+    # ตัวคูณหักล้างกรณีขนาดตลาดเล็กเกินไป (Market Size Penalty)
+    # ป้องกันกรณีพื้นที่ห่างไกลที่ไม่มีคู่แข่งเลย (Supply ใกล้ 0) แต่จำนวนตึกความต้องการก็ใกล้ 0 เช่นกัน
+    market_size_factor = 1.0 - np.exp(-weighted_demand / 15.0)
+    score = round(raw_score * market_size_factor, 1)
 
     # 9. ตัดเกรดศักยภาพทำเล
     if score >= 80:
