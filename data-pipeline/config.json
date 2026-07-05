@@ -1,0 +1,8 @@
+{
+  "bkk_bbox": [100.30, 13.45, 100.95, 13.95],
+  "target_competitors": ["restaurant", "cafe", "fast_food", "bar"],
+  "target_pois": ["apartments", "residential", "office", "commercial", "retail"],
+  "housing_skiprows": 4,
+  "competitor_columns": ["name", "amenity_type", "cuisine", "latitude", "longitude"],
+  "poi_columns": ["name", "type", "latitude", "longitude"]
+}

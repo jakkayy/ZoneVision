@@ -1,0 +1,11 @@
+jupyter
+ipykernel
+pandas
+matplotlib
+sqlalchemy
+psycopg2-binary
+requests
+folium
+geopandas
+rasterio
+seaborn

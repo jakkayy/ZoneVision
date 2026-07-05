@@ -1,0 +1,35 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python Cache & Compiled Code
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Data Files (Exclude raw large data and processed datasets)
+data-pipeline/data/raw/*.osm.pbf
+data-pipeline/data/interim/*.json
+data-pipeline/data/processed/*.csv
+
+# OS generated files
+.DS_Store
+Thumbs.db
