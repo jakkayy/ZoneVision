@@ -12,6 +12,7 @@ PIPELINE_STEPS = [
     ("scripts/clean/clean_housing.py", "ทำความสะอาดข้อมูลที่อยู่อาศัย (Housing Cleaning)"),
     ("scripts/clean/clean_competitors.py", "ทำความสะอาดข้อมูลคู่แข่ง (Competitors Cleaning)"),
     ("scripts/clean/clean_pois.py", "ทำความสะอาดข้อมูลจุดสนใจ (POIs Cleaning)"),
+    ("scripts/scrape/scrape_bts.py", "ดึงข้อมูล BTS จากแหล่งข้อมูลภายนอก (BTS Data Scraping)"),
 ]
 
 def run_script(script_relative_path, description):
