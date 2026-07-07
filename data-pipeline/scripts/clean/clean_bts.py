@@ -1,6 +1,14 @@
 import pandas as pd
+import os
+from pathlib import Path
 
-df = pd.read_csv('../../data/raw/bts.csv', encoding='latin-1')
+# ป้องกันบั๊กพาธสัมพัทธ์โดยใช้อ้างอิงพาธจากไฟล์ปัจจุบัน
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+input_file = BASE_DIR / "data" / "raw" / "bts.csv"
+output_file = BASE_DIR / "data" / "processed" / "bts_clean.csv"
+
+print(f"กำลังโหลดข้อมูลรถไฟฟ้าดิบจาก: {input_file}...")
+df = pd.read_csv(input_file, encoding='latin-1')
 
 df.drop(columns=["Note", "_id", 'No.'], inplace=True)
 
@@ -17,4 +25,6 @@ df["day"] = df["date"].dt.day
 df["weekday"] = df["date"].dt.dayofweek
 df["is_weekend"] = df["weekday"] >= 5
 
-df.to_csv("../../data/processed/bts_clean.csv", index=False)
+os.makedirs(output_file.parent, exist_ok=True)
+df.to_csv(output_file, index=False)
+print(f"✅ ทำความสะอาดข้อมูลรถไฟฟ้าและบันทึกสำเร็จที่: {output_file}")

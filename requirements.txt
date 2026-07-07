@@ -9,4 +9,3 @@ folium
 geopandas
 rasterio
 seaborn
-reqeusts
