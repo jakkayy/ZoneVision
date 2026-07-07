@@ -29,31 +29,29 @@ pip install -r requirements.txt
 ### 3. วิธีรันระบบวิเคราะห์ทำเลทอง (Run Pipeline)
 รันไฟล์ประสานงานหลักเพื่อทำความสะอาดและจัดเตรียมข้อมูล:
 ```bash
-python data-pipeline/run_pipeline.py
+make pipeline
 ```
-*ระบบจะทำความสะอาดข้อมูลที่อยู่อาศัย, วิเคราะห์คู่แข่ง F&B, จัดระเบียบ POIs ประชากร และดึงสถิติผู้โดยสารรถไฟฟ้ารายวันอัตโนมัติพร้อมรายงานความสมบูรณ์*
+*(หรือใช้คำสั่งเต็ม: `python data-pipeline/run_pipeline.py`)*
 
 ### 4. วิธีประเมินศักยภาพทำเลรายจุด (CLI Suitability Evaluation)
-คุณสามารถรันตัวประเมินทำเลเป้าหมายอย่างเป็นขั้นตอนด้วยคำสั่งภาษาธรรมดา (ย่อชื่อพิกัด/ประเภทธุรกิจ) ดังนี้:
+คุณสามารถรันตัวประเมินทำเลเป้าหมายด้วยคำสั่งสั้นผ่าน **Makefile** (แนะนำ) หรือพิมพ์สั่งผ่าน Python ตรงๆ ดังนี้:
 
-* **คำสั่งแบบย่อพิกัดตามชื่อสถานที่ (Presets):**
+* **คำสั่งทางลัดด่วนผ่าน Makefile (แนะนำ):**
+  ```bash
+  make run centralworld general
+  make run siam-square cafe
+  make run nong-chok restaurant
+  ```
+
+* **คำสั่งแบบดั้งเดิมผ่าน Python (ระบุชื่อย่อ Presets):**
   ```bash
   python data-pipeline/scripts/analysis/evaluate_location.py siam-paragon cafe
   ```
-  *(ระบบจะดึงพิกัดสยามพารากอนมาประเมินโอกาสสำเร็จของร้านกาแฟให้ทันที)*
 
 * **คำสั่งแบบป้อนพิกัดตรงด้วยละติจูด,ลองจิจูด:**
   ```bash
   python data-pipeline/scripts/analysis/evaluate_location.py 13.7456,100.5342 restaurant
   ```
-  *(ระบุประเภทเป็น `restaurant` เพื่อทดสอบคะแนนร้านอาหารตามสั่งทั่วไปได้)*
-
-* **ตัวเลือกประเภทธุรกิจอาหารที่รองรับ:**
-  - `restaurant` (หรือ `general`): ร้านอาหารทั่วไป
-  - `cafe`                     : ร้านกาแฟ/คาเฟ่
-  - `fast_food`                : ร้านอาหารจานด่วน
-  - `bar`                      : ร้านเหล้า/สถานบันเทิง
-  - `family_buffet`            : ร้านบุฟเฟต์ปิ้งย่าง
 
 ---
 
@@ -91,30 +89,28 @@ python data-pipeline/run_pipeline.py
 
 หากต้องการทดสอบตัวระบบ Data Pipeline ตั้งแต่ต้นน้ำถึงปลายน้ำ ให้ทดสอบดังนี้:
 
-### ขั้นตอนที่ 1: รันดึงพิกัดล่าสุดผ่านอินเทอร์เน็ต (Overpass API Ingestion)
-ทำการรันสคริปต์สกัดตำแหน่งคู่แข่งและตึกผู้ซื้อจากเซิร์ฟเวอร์หลัก (ใช้เวลาประมาณ 10-30 วินาที):
+### ขั้นตอนที่ 1: ดึงพิกัดล่าสุดผ่านอินเทอร์เน็ต (Overpass API)
+ดึงตำแหน่งคู่แข่งและตึกผู้ซื้อจากเซิร์ฟเวอร์หลัก:
 ```bash
-# ดึงพิกัดคู่แข่งอาหาร (ร้านอาหาร, คาเฟ่, บาร์)
-python data-pipeline/scripts/scrape/scrape_competitors.py
-
-# ดึงพิกัดจุดความต้องการ (ออฟฟิศ, คอนโด, ห้างสรรพสินค้า)
-python data-pipeline/scripts/scrape/scrape_pois.py
+make scrape
 ```
+*(หรือคำสั่งเต็ม: รันสคริปต์ `scrape_competitors.py` และ `scrape_pois.py`)*
 
 ### ขั้นตอนที่ 2: รันคลีนและจัดโครงสร้างไพป์ไลน์ข้อมูล
-ประมวลผลทำความสะอาดคัดแยกข้อมูลที่ได้มาใน **ขั้นตอนที่ 1** พร้อมบันทึกรูป Heatmap:
+ประมวลผลทำความสะอาดคัดแยกข้อมูลและวิเคราะห์อัตราการแข่งขัน:
 ```bash
-python data-pipeline/run_pipeline.py
+make pipeline
 ```
 
 ### ขั้นตอนที่ 3: ตรวจสอบรายงานและแผนที่ปฏิสัมพันธ์
 * เปิดเช็ครายงาน Heatmap ตรวจสอบค่าว่างได้ที่โฟลเดอร์: [data-pipeline/reports/figures/](data-pipeline/reports/figures/)
-* ดับเบิ้ลคลิกเปิดดูแผนที่พล็อตคู่แข่ง Cluster บนบราวเซอร์ได้ที่ไฟล์: [data-pipeline/data/processed/bangkok_competitors_map.html](data-pipeline/data/processed/bangkok_competitors_map.html)
+* เปิดดูแผนที่พล็อตคู่แข่ง Cluster บนบราวเซอร์ได้ที่ไฟล์: [data-pipeline/data/processed/bangkok_competitors_map.html](data-pipeline/data/processed/bangkok_competitors_map.html)
 
 ### ขั้นตอนที่ 4: รันวิเคราะห์จุดปักหมุด
 ทดลองรันคำสั่งหาคำตอบศักยภาพพื้นที่ย่านเป้าหมาย:
 ```bash
-python data-pipeline/scripts/analysis/evaluate_location.py asok cafe
+make run asok cafe
+make run nong-chok restaurant
 ```
 *(หากใส่ชื่อย่อยที่ระบบไม่รู้จัก สคริปต์จะพ่นรายชื่อ Presets ทั้งหมดที่รอบรับในระบบออกมาแสดงทันที)*
 
