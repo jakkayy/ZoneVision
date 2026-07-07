@@ -1,7 +1,8 @@
 import pandas as pd
-from pyrosm import OSM
-import gc
+import requests
+import json
 import os
+import gc
 import sys
 from pathlib import Path
 
@@ -13,44 +14,77 @@ logger = get_logger("scrape_pois")
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 config = load_config()
 
-osm_filepath = os.getenv("OSM_FILEPATH", str(BASE_DIR / "data" / "raw" / "thailand-260703.osm.pbf"))
 bkk_bbox = config.get("bkk_bbox", [100.30, 13.45, 100.95, 13.95])
 target_pois = config.get("target_pois", ["apartments", "residential", "office", "commercial", "retail"])
 
 def main():
-    logger.info("เริ่มต้นเชื่อมต่อไฟล์ดิบ OSM และจำกัดขอบเขตกรุงเทพฯ...")
-    if not os.path.exists(osm_filepath):
-        logger.error(f"ไม่พบไฟล์ OSM ที่ {osm_filepath}")
+    logger.info("เริ่มต้นดาวน์โหลดข้อมูลจุดดึงดูดประชากร (Demand POIs) จาก Overpass API...")
+    
+    # แปลง Bounding Box เป็นฟอร์แมต Overpass: (min_lat, min_lon, max_lat, max_lon)
+    bbox_str = f"{bkk_bbox[1]},{bkk_bbox[0]},{bkk_bbox[3]},{bkk_bbox[2]}"
+    
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    
+    # คอนฟิกคิวรีดึงข้อมูลสิ่งปลูกสร้างที่มี building ตามที่ระบุใน config
+    building_regex = "|".join(target_pois)
+    query_str = f"""
+    [out:json][timeout:180];
+    (
+      node["building"~"{building_regex}"]({bbox_str});
+      way["building"~"{building_regex}"]({bbox_str});
+      relation["building"~"{building_regex}"]({bbox_str});
+    );
+    out center;
+    """
+    
+    headers = {
+        'User-Agent': 'ZoneVisionSeniorProject/1.0 (contact: naeiger@example.com)'
+    }
+    
+    try:
+        response = requests.post(overpass_url, data={'data': query_str}, headers=headers, timeout=180)
+        if response.status_code != 200:
+            logger.error(f"การดึงข้อมูลล้มเหลว: HTTP Code {response.status_code}")
+            return
+            
+        data = response.json()
+        elements = data.get('elements', [])
+        logger.info(f"ดึงข้อมูลจากเซิร์ฟเวอร์สำเร็จ! พบอาคารทั้งหมด: {len(elements)} รายการ")
+        
+        pois = []
+        for el in elements:
+            lat = el.get('lat') or el.get('center', {}).get('lat')
+            lon = el.get('lon') or el.get('center', {}).get('lon')
+            tags = el.get('tags', {})
+            name = tags.get('name') or tags.get('name:en') or tags.get('name:th')
+            building = tags.get('building')
+            
+            pois.append({
+                'name': name,
+                'building': building,
+                'latitude': lat,
+                'longitude': lon
+            })
+            
+        df_flat = pd.DataFrame(pois)
+        
+    except Exception as e:
+        logger.error(f"เกิดข้อผิดพลาดระหว่างดึงข้อมูล: {str(e)}")
         return
 
-    osm = OSM(osm_filepath, bounding_box=bkk_bbox)
-
-    logger.info(f"กำลังสกัดข้อมูลตึกดิบกลุ่มจุดสนใจ (ประเภท: {target_pois})...")
-    buildings_gdf = osm.get_buildings()
-
-    if buildings_gdf is None or len(buildings_gdf) == 0:
-        logger.warning("ไม่พบข้อมูลตึกใด ๆ ในขอบเขตพื้นที่ที่ระบุ")
+    if len(df_flat) == 0:
+        logger.warning("ไม่พบข้อมูลจุดสนใจความต้องการใดๆ ในเขตพื้นที่ป้อนคำสั่ง")
         return
 
-    logger.info(f"ดึงข้อมูลดิบมาได้: {len(buildings_gdf)} แถว. กำลังประมวลผลพิกัด...")
-    buildings_gdf['latitude'] = buildings_gdf.geometry.centroid.y
-    buildings_gdf['longitude'] = buildings_gdf.geometry.centroid.x
-
-    # แปลงโครงสร้างเป็น DataFrame และทำลาย geometry เพื่อประหยัดแรม
-    df_flat = pd.DataFrame(buildings_gdf)
-    if 'geometry' in df_flat.columns:
-        df_flat = df_flat.drop(columns=['geometry'])
-
-    # บันทึกไฟล์ระดับดิบลงในคลัง interim
+    # บันทึกข้อมูลดิบลงใน interim
     os.makedirs(str(BASE_DIR / "data" / "interim"), exist_ok=True)
     output_file = str(BASE_DIR / "data" / "interim" / "bangkok_pois.json")
     df_flat.to_json(output_file, orient='records', force_ascii=False, indent=4)
-    logger.info(f"บันทึกสกัดไฟล์ระดับดิบเข้าคลัง interim สำเร็จ: {output_file}")
-
-    del buildings_gdf
+    logger.info(f"บันทึกไฟล์ระดับดิบเข้าคลัง interim สำเร็จ: {output_file}")
+    
     del df_flat
     gc.collect()
-    logger.info("ทำความสะอาดตัวแปรยักษ์ในแรมเรียบร้อย")
+    logger.info("เคลียร์แรมระบบข้อมูลสำเร็จ")
 
 if __name__ == "__main__":
     main()
