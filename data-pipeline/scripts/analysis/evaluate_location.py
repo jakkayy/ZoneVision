@@ -168,25 +168,75 @@ def evaluate_site(lat, lng, biz_type, max_radius_km=1.0):
     }
 
 if __name__ == "__main__":
-    # รองรับการป้อนคำสั่งผ่าน Terminal เช่น:
-    # python evaluate_location.py --lat 13.7456 --lng 100.5342 --type cafe
+    # รายการชื่อสถานที่ย่อและพิกัดละติจูด,ลองจิจูดสำหรับวิเคราะห์ทำเลทอง
+    LOCATION_PRESETS = {
+        'siam-paragon': (13.7458, 100.5350),
+        'siam-square': (13.7456, 100.5342),
+        'centralworld': (13.7466, 100.5397),
+        'chula': (13.7384, 100.5307),
+        'asok': (13.7369, 100.5604),
+        'silom': (13.7286, 100.5340),
+        'ari': (13.7796, 100.5447),
+        'thonglor': (13.7339, 100.5828),
+        'chatuchak': (13.8034, 100.5532),
+        'victory-monument': (13.7649, 100.5383)
+    }
+
+    # รองรับการป้อนคำสั่งผ่าน Terminal แบบสั้น เช่น:
+    # python evaluate_location.py siam-paragon cafe
     parser = argparse.ArgumentParser(description="ZoneVision - Site Suitability Evaluation Tool")
-    parser.add_argument("--lat", type=float, required=True, help="พิกัดละติจูดของร้านเป้าหมาย")
-    parser.add_argument("--lng", type=float, required=True, help="พิกัดลองจิจูดของร้านเป้าหมาย")
-    parser.add_argument("--type", type=str, required=True, choices=['general', 'cafe', 'fast_food', 'bar', 'family_buffet'], help="ประเภทของร้านอาหาร")
+    parser.add_argument("location", type=str, help="ชื่อสถานที่ย่อ (เช่น siam-paragon, asok) หรือ พิกัดละติจูด,ลองจิจูด (เช่น 13.7456,100.5342)")
+    parser.add_argument("type", type=str, help="ประเภทของร้านอาหาร (general, restaurant, cafe, fast_food, bar, family_buffet)")
     parser.add_argument("--radius", type=float, default=1.0, help="รัศมีขอบเขตประเมินหน่วยเป็นกิโลเมตร (ค่าเริ่มต้น: 1.0)")
     
     args = parser.parse_args()
     
+    # 1. จัดการตัวแปลพิกัดสถานที่
+    loc_input = args.location.lower().strip()
+    if loc_input in LOCATION_PRESETS:
+        lat, lng = LOCATION_PRESETS[loc_input]
+        loc_name = f"{args.location} (Lat {lat}, Lng {lng})"
+    else:
+        # พยายามแยกพิกัดกรณีระบุมาในรูป 'lat,lng'
+        try:
+            parts = loc_input.split(',')
+            lat = float(parts[0].strip())
+            lng = float(parts[1].strip())
+            loc_name = f"พิกัดกำหนดเอง (Lat {lat}, Lng {lng})"
+        except Exception:
+            print(f"\n❌ ข้อผิดพลาด: ไม่รู้จักชื่อย่อสถานที่ '{args.location}'")
+            print("กรุณากรอกพิกัดแบบ 'ละติจูด,ลองจิจูด' (เช่น 13.7456,100.5342) หรือเลือกชื่อย่อจากรายการต่อไปนี้:")
+            for name in LOCATION_PRESETS.keys():
+                print(f"  - {name}")
+            print("")
+            sys.exit(1)
+
+    # 2. จัดการแมปแปลงประเภทร้านอาหาร
+    biz_type = args.type.lower().strip()
+    if biz_type == 'restaurant':
+        biz_type = 'general'
+        
+    valid_types = ['general', 'cafe', 'fast_food', 'bar', 'family_buffet']
+    if biz_type not in valid_types:
+        print(f"\n❌ ข้อผิดพลาด: ไม่รู้จักประเภทธุรกิจอาหาร '{args.type}'")
+        print("กรุณาเลือกประเภทธุรกิจดังต่อไปนี้:")
+        print("  - restaurant (หรือ general) : ร้านอาหารทั่วไป")
+        print("  - cafe                     : ร้านกาแฟ/คาเฟ่")
+        print("  - fast_food                : ร้านอาหารจานด่วน")
+        print("  - bar                      : ร้านเหล้า/สถานบันเทิง")
+        print("  - family_buffet            : ร้านบุฟเฟต์ปิ้งย่าง")
+        print("")
+        sys.exit(1)
+    
     print("\n" + "="*80)
     print("                ZONEVISION SITE SUITABILITY REPORT               ")
     print("="*80)
-    print(f"พิกัดเป้าหมาย: Lat {args.lat}, Lng {args.lng}")
-    print(f"ประเภทร้านอาหาร: {args.type}")
+    print(f"พิกัดเป้าหมาย: {loc_name}")
+    print(f"ประเภทร้านอาหาร: {args.type} (คำนวณถ่วงน้ำหนักสเกลแบบ {biz_type})")
     print(f"รัศมีวิเคราะห์: {args.radius} กิโลเมตร (ถ่วงน้ำหนักลดทอนตามระยะทาง)")
     print("-"*80)
     
-    report = evaluate_site(args.lat, args.lng, args.type, args.radius)
+    report = evaluate_site(lat, lng, biz_type, args.radius)
     
     if report:
         print(f"คะแนนโอกาสสำเร็จ (Opportunity Score): {report['score']} / 100")
